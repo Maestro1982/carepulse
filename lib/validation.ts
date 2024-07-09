@@ -10,7 +10,7 @@ export const UserFormValidation = z.object({
     const digits = phone.replace(/\D/g, '');
     return (
       /^\+\d{1,4}\d{9,15}$/.test(phone) &&
-      digits.length >= 10 &&
+      digits.length >= 9 &&
       digits.length <= 15
     );
   }, 'Phone number must be a valid international number after the country code.'),
