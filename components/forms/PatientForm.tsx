@@ -3,14 +3,16 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
 import { Form } from '@/components/ui/form';
-
 import CustomFormfield from '@/components/CustomFormField';
 import SubmitButton from '@/components/SubmitButton';
 
 import { UserFormValidation } from '@/lib/validation';
+import { createUser } from '@/lib/actions/patient.actions';
 
 export enum FormFieldType {
   INPUT = 'input',
@@ -23,6 +25,7 @@ export enum FormFieldType {
 }
 
 const PatientForm = () => {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof UserFormValidation>>({
@@ -34,8 +37,29 @@ const PatientForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof UserFormValidation>) {
-    console.log(values);
+  async function onSubmit({
+    name,
+    email,
+    phone,
+  }: z.infer<typeof UserFormValidation>) {
+    setIsLoading(true);
+
+    try {
+      const userData = { name, email, phone };
+      const user = await createUser(userData);
+
+      if (user && user.$id) {
+        setIsLoading(false);
+        router.push(`/patients/${user.$id}/register`);
+      } else {
+        console.error('Invalid user data:', user);
+        toast.error('Failed to create user. Please try again.');
+      }
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error('Error creating user:', error);
+      toast.error(`Error creating user: ${error.message || error}`);
+    }
   }
 
   return (
@@ -70,7 +94,7 @@ const PatientForm = () => {
           fieldType={FormFieldType.PHONE_INPUT}
           name='phone'
           label='Phone Number'
-          placeholder='(555) 555-5555'
+          placeholder='9 digits...'
         />
 
         <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>
