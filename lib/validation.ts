@@ -7,7 +7,6 @@ export const UserFormValidation = z.object({
     .max(50, 'Name has a maximum of 50 characters.'),
   email: z.string().email('Invalid email address.'),
   phone: z.string().refine((phone) => {
-    // Ensure the phone number has exactly 9 digits after the country code
     const digits = phone.replace(/\D/g, '');
     return (
       /^\+\d{1,4}\d{9,15}$/.test(phone) &&
