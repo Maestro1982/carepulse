@@ -18,45 +18,66 @@ import SubmitButton from '@/components/SubmitButton';
 import { FormFieldType } from '@/components/forms/PatientForm';
 import FileUploader from '@/components/FileUploader';
 
-import { UserFormValidation } from '@/lib/validation';
-import { createUser } from '@/lib/actions/patient.actions';
-import { Doctors, GenderOptions, IdentificationTypes } from '@/constants';
+import { PatientFormValidation } from '@/lib/validation';
+import { registerPatient } from '@/lib/actions/patient.actions';
+import {
+  Doctors,
+  GenderOptions,
+  IdentificationTypes,
+  PatientFormDefaultValues,
+} from '@/constants';
 
 const RegisterForm = ({ user }: { user: User }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const form = useForm<z.infer<typeof UserFormValidation>>({
-    resolver: zodResolver(UserFormValidation),
+  const form = useForm<z.infer<typeof PatientFormValidation>>({
+    resolver: zodResolver(PatientFormValidation),
     defaultValues: {
+      ...PatientFormDefaultValues,
       name: '',
       email: '',
       phone: '',
     },
   });
 
-  async function onSubmit({
-    name,
-    email,
-    phone,
-  }: z.infer<typeof UserFormValidation>) {
+  async function onSubmit(values: z.infer<typeof PatientFormValidation>) {
     setIsLoading(true);
 
-    try {
-      const userData = { name, email, phone };
-      const user = await createUser(userData);
+    let formData;
 
-      if (user && user.$id) {
-        setIsLoading(false);
-        router.push(`/patients/${user.$id}/register`);
-      } else {
-        console.error('Invalid user data:', user);
-        toast.error('Failed to create user. Please try again.');
+    if (
+      values.identificationDocument &&
+      values.identificationDocument.length > 0
+    ) {
+      const blobFile = new Blob([values.identificationDocument[0]], {
+        type: values.identificationDocument[0].type,
+      });
+
+      formData = new FormData();
+      formData.append('blobFile', blobFile);
+      formData.append('fileName', values.identificationDocument[0].name);
+    }
+
+    try {
+      const patientData = {
+        ...values,
+        userId: user.$id,
+        birthDate: new Date(values.birthDate),
+        identificationDocument: formData,
+      };
+
+      //@ts-ignore
+      const patient = await registerPatient(patientData);
+
+      if (patient) {
+        toast.success('Patient successfully registered.');
+        router.push(`/patients/${user.$id}/new-appointment`);
       }
     } catch (error: any) {
       setIsLoading(false);
-      console.error('Error creating user:', error);
-      toast.error(`Error creating user: ${error.message || error}`);
+      console.log(error);
+      toast.error('Patient registration failed, Please try again.');
     }
   }
 
@@ -111,6 +132,7 @@ const RegisterForm = ({ user }: { user: User }) => {
             fieldType={FormFieldType.DATE_PICKER}
             name='birthDate'
             label='Date of birth'
+            placeholder='Select your date of birth'
           />
 
           <CustomFormfield
@@ -189,24 +211,29 @@ const RegisterForm = ({ user }: { user: User }) => {
           placeholder='Select a physician'
         >
           {Doctors.map((doctor) => (
-            <SelectItem key={doctor.name} value={doctor.name}>
-              <div className='flex items-center cursor-pointer gap-2'>
-                <Image
-                  src={doctor.image}
-                  alt={doctor.name}
-                  width={32}
-                  height={32}
-                  className='rounded-full border border-dark-500'
-                />
-                <p>
-                  {doctor.name}
-                  <span className='ml-2'>
-                    {' '}
-                    <span className='mr-2'>-</span> {doctor.specialization}
-                  </span>
-                </p>
-              </div>
-            </SelectItem>
+            <div
+              key={doctor.name}
+              className='w-full hover:bg-fuchsia-500 rounded-md'
+            >
+              <SelectItem value={doctor.name}>
+                <div className='flex items-center cursor-pointer gap-2'>
+                  <Image
+                    src={doctor.image}
+                    alt={doctor.name}
+                    width={32}
+                    height={32}
+                    className='rounded-full border border-dark-500'
+                  />
+                  <p>
+                    {doctor.name}
+                    <span className='ml-2'>
+                      {' '}
+                      <span className='mr-2'>-</span> {doctor.specialization}
+                    </span>
+                  </p>
+                </div>
+              </SelectItem>
+            </div>
           ))}
         </CustomFormfield>
 
@@ -331,7 +358,7 @@ const RegisterForm = ({ user }: { user: User }) => {
           label='I acknowledge that I have reviewed and agree to the privacy policy.'
         />
 
-        <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>
+        <SubmitButton isLoading={isLoading}>Submit and continue</SubmitButton>
       </form>
     </Form>
   );
