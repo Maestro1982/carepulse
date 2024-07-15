@@ -20,7 +20,7 @@ export default function Home() {
           <PatientForm />
 
           <div className='text-14-regular mt-20 flex justify-between'>
-            <p className='copyright py-12'>
+            <p className='copyright'>
               &copy; {new Date().getFullYear()} CarePulse
             </p>
             <Link

@@ -1,12 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { toast } from 'sonner';
 
 import { Form } from '@/components/ui/form';
 import { SelectItem } from '@/components/ui/select';
@@ -15,53 +14,86 @@ import CustomFormfield from '@/components/CustomFormField';
 import SubmitButton from '@/components/SubmitButton';
 import { FormFieldType } from '@/components/forms/PatientForm';
 
-import { UserFormValidation } from '@/lib/validation';
-import { createUser } from '@/lib/actions/patient.actions';
+import { getAppointmentSchema } from '@/lib/validation';
 import { Doctors } from '@/constants';
+import { Appointment } from '@/types/appwrite.types';
+import { createAppointment } from '@/lib/actions/appointment.actions';
 
 type AppointmentFormProps = {
   userId: string;
   patientId: string;
   type: 'create' | 'cancel' | 'schedule';
+  appointment?: Appointment;
+  setOpen?: Dispatch<SetStateAction<boolean>>;
 };
 
-const AppointmentForm = ({ userId, patientId, type }: AppointmentFormProps) => {
+const AppointmentForm = ({
+  userId,
+  patientId,
+  type,
+  appointment,
+  setOpen,
+}: AppointmentFormProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const form = useForm<z.infer<typeof UserFormValidation>>({
-    resolver: zodResolver(UserFormValidation),
+  const AppointmentFormValidation = getAppointmentSchema(type);
+
+  const form = useForm<z.infer<typeof AppointmentFormValidation>>({
+    resolver: zodResolver(AppointmentFormValidation),
     defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
+      primaryPhysician: appointment ? appointment?.primaryPhysician : '',
+      schedule: appointment
+        ? new Date(appointment?.schedule!)
+        : new Date(Date.now()),
+      reason: appointment ? appointment.reason : '',
+      note: appointment?.note || '',
+      cancellationReason: appointment?.cancellationReason || '',
     },
   });
 
-  async function onSubmit({
-    name,
-    email,
-    phone,
-  }: z.infer<typeof UserFormValidation>) {
+  const onSubmit = async (
+    values: z.infer<typeof AppointmentFormValidation>
+  ) => {
     setIsLoading(true);
 
-    try {
-      const userData = { name, email, phone };
-      const user = await createUser(userData);
+    let status;
 
-      if (user && user.$id) {
-        setIsLoading(false);
-        router.push(`/patients/${user.$id}/register`);
-      } else {
-        console.error('Invalid user data:', user);
-        toast.error('Failed to create user. Please try again.');
-      }
-    } catch (error: any) {
-      setIsLoading(false);
-      console.error('Error creating user:', error);
-      toast.error(`Error creating user: ${error.message || error}`);
+    switch (type) {
+      case 'schedule':
+        status = 'scheduled';
+        break;
+      case 'cancel':
+        status = 'cancelled';
+        break;
+      default:
+        status = 'pending';
+        break;
     }
-  }
+
+    try {
+      if (type === 'create' && patientId) {
+        const appointmentData = {
+          userId,
+          patient: patientId,
+          primaryPhysician: values.primaryPhysician,
+          schedule: new Date(values.schedule),
+          reason: values.reason!,
+          note: values.note,
+          status: status as Status,
+        };
+
+        const appointment = await createAppointment(appointmentData);
+
+        if (appointment) {
+          form.reset();
+          router.push(
+            `/patients/${userId}/new-appointment/success?appointmentId=${appointment.$id}`
+          );
+        }
+      }
+    } catch (error) {}
+  };
 
   let buttonLabel;
 
@@ -146,8 +178,8 @@ const AppointmentForm = ({ userId, patientId, type }: AppointmentFormProps) => {
               <CustomFormfield
                 fieldType={FormFieldType.TEXT_AREA}
                 control={form.control}
-                name='notes'
-                label='Notes'
+                name='note'
+                label='Note'
                 placeholder='ex: Daily blood pressure recording, the value is to high'
               />
             </div>
@@ -176,5 +208,4 @@ const AppointmentForm = ({ userId, patientId, type }: AppointmentFormProps) => {
     </Form>
   );
 };
-
 export default AppointmentForm;
