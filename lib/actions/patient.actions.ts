@@ -90,20 +90,43 @@ export const registerPatient = async ({
   }
 };
 
+export const completeRegistration = async (patientId: string) => {
+  try {
+    const updatedPatient = await databases.updateDocument(
+      DATABASE_ID!,
+      PATIENT_COLLECTION_ID!,
+      patientId,
+      {
+        registrationCompleted: true,
+      }
+    );
+
+    return updatedPatient;
+  } catch (error) {
+    console.error('An error occurred while completing registration:', error);
+  }
+};
+
 // GET PATIENT
 export const getPatient = async (userId: string) => {
   try {
     const patients = await databases.listDocuments(
       DATABASE_ID!,
       PATIENT_COLLECTION_ID!,
-      [Query.equal('userId', [userId])]
+      [Query.equal('userId', userId)]
     );
 
-    return parseStringify(patients.documents[0]);
+    if (patients.total > 0) {
+      const patient = patients.documents[0];
+      return parseStringify(patient);
+    } else {
+      throw new Error('No patient found for the specified user ID');
+    }
   } catch (error) {
     console.error(
       'An error occurred while retrieving the patient details:',
       error
     );
+    throw new Error('Failed to retrieve patient data. Please try again.');
   }
 };

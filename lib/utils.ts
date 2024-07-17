@@ -40,10 +40,10 @@ export const formatDateTime = (dateString: Date | string) => {
     hour12: false, // use 12-hour clock (true) or 24-hour clock (false)
   };
 
-  const formattedDateTime: string = new Date(dateString).toLocaleString(
+  const formattedDateTime = new Intl.DateTimeFormat(
     'nl-BE',
     dateTimeOptions
-  );
+  ).format(new Date(dateString));
 
   const formattedDateDay: string = new Date(dateString).toLocaleString(
     'nl-BE',

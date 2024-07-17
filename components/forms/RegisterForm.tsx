@@ -19,7 +19,10 @@ import { FormFieldType } from '@/components/forms/PatientForm';
 import FileUploader from '@/components/FileUploader';
 
 import { PatientFormValidation } from '@/lib/validation';
-import { registerPatient } from '@/lib/actions/patient.actions';
+import {
+  completeRegistration,
+  registerPatient,
+} from '@/lib/actions/patient.actions';
 import {
   Doctors,
   GenderOptions,
@@ -71,6 +74,8 @@ const RegisterForm = ({ user }: { user: User }) => {
       const patient = await registerPatient(patientData);
 
       if (patient) {
+        // Update registrationCompleted to true
+        await completeRegistration(patient.$id);
         toast.success('Patient successfully registered.');
         router.push(`/patients/${user.$id}/new-appointment`);
       }
