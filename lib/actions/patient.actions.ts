@@ -90,23 +90,6 @@ export const registerPatient = async ({
   }
 };
 
-export const completeRegistration = async (patientId: string) => {
-  try {
-    const updatedPatient = await databases.updateDocument(
-      DATABASE_ID!,
-      PATIENT_COLLECTION_ID!,
-      patientId,
-      {
-        registrationCompleted: true,
-      }
-    );
-
-    return updatedPatient;
-  } catch (error) {
-    console.error('An error occurred while completing registration:', error);
-  }
-};
-
 // GET PATIENT
 export const getPatient = async (userId: string) => {
   try {

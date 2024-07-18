@@ -19,10 +19,7 @@ import { FormFieldType } from '@/components/forms/PatientForm';
 import FileUploader from '@/components/FileUploader';
 
 import { PatientFormValidation } from '@/lib/validation';
-import {
-  completeRegistration,
-  registerPatient,
-} from '@/lib/actions/patient.actions';
+import { registerPatient } from '@/lib/actions/patient.actions';
 import {
   Doctors,
   GenderOptions,
@@ -71,11 +68,9 @@ const RegisterForm = ({ user }: { user: User }) => {
       };
 
       //@ts-ignore
-      const patient = await registerPatient(patientData);
+      const newPatient = await registerPatient(patientData);
 
-      if (patient) {
-        // Update registrationCompleted to true
-        await completeRegistration(patient.$id);
+      if (newPatient) {
         toast.success('Patient successfully registered.');
         router.push(`/patients/${user.$id}/new-appointment`);
       }
@@ -310,9 +305,9 @@ const RegisterForm = ({ user }: { user: User }) => {
           placeholder='Select an identification type'
         >
           {IdentificationTypes.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
+            <div className='w-full hover:bg-fuchsia-500 rounded-md' key={type}>
+              <SelectItem value={type}>{type}</SelectItem>
+            </div>
           ))}
         </CustomFormfield>
 
