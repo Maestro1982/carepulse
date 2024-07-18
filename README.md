@@ -1,6 +1,6 @@
 # Healthcare Medical Appointment Application
 
-[@public/carepulse.jpg]
+![CarePulse](image.png)
 
 # Introduction
 
